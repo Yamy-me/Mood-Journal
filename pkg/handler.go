@@ -39,16 +39,18 @@ func (a *Handler) SignIn(ctx *gin.Context){
 	var signIn auth.InputSignIn
 
 	if err := ctx.ShouldBindJSON(&signIn); err != nil{
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(401, gin.H{"error": err.Error()})
 		return
 	}
 
 	res, err := signIn.SignIn(a.database)
-	if !res && err != nil{
-		ctx.JSON(400, gin.H{
-			"error": err.Error()})
-		return
+	if err != nil{
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return 
 	}
 
+	ctx.SetCookie("access_token", res, 3600*24, "/", "", false, true)
+	ctx.JSON(200, gin.H{"status": "succesfully login"})
+	return 
 	
 }
