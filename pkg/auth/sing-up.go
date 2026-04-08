@@ -50,7 +50,7 @@ func (a *InputSignUp) SignUp(database *sql.DB) error{
 	if errHash != nil{
 		return fmt.Errorf("[ERROR] SignUp Hashing error: %v", errHash)
 	}
-	_, errDB := database.Exec("INSERT INTO user (name, email, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?)", a.Name, a.Email, hashedPassword, time.Now(), time.Now().Format("2006-01-02 15:04:05"))
+	_, errDB := database.Exec("INSERT INTO user (name, email, password, created_at, updated_at, streak_days) VALUES (?, ?, ?, ?, ?, 0)", a.Name, a.Email, hashedPassword, time.Now(), time.Now().Format("2006-01-02 15:04:05"))
 
 	if errDB != nil{
 		return fmt.Errorf("[ERROR] SignUp DATABASE error: %v", errDB)

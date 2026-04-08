@@ -34,7 +34,7 @@ func CheckPassword(email string, password string, db *sql.DB) (int, bool) {
     }
 
     var id int
-    idScan_EmailScan := db.QueryRow("SELECT id FROM users WHERE email = ?;", email).Scan(&id)
+    idScan_EmailScan := db.QueryRow("SELECT id FROM user WHERE email = ?;", email).Scan(&id)
      if idScan_EmailScan == sql.ErrNoRows {
         log.Printf("[ERROR] User not found: %v", email)
         return 0, false

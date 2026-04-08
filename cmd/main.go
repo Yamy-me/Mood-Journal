@@ -1,18 +1,20 @@
 package main
 
 import (
+	"log"
+
 	moodJournal "Yamy-Gin"
 	"Yamy-Gin/routes"
-	"log"
 )
 
 func main() {
-	server, err := moodJournal.NewServer("8080", routes.New().InitRoutes())
+    server, err := moodJournal.NewServer("8080", routes.New().InitRoutes())
+    if err != nil {
+        log.Fatalf("error in main.go: %v", err)
+    }
 
-	if err != nil {
-		log.Fatalf("error in main.go: %v", err)
-	}
-
-	server.Run()
-
+    // Обязательно логируем ошибку падения сервера!
+    if err := server.Run(); err != nil {
+        log.Fatalf("Ошибка при запуске сервера: %v", err)
+    }
 }

@@ -7,7 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	handlers "Yamy-Gin/pkg"
-
 )
 
 type Route struct{}
@@ -25,7 +24,7 @@ func (r *Route) InitRoutes() *gin.Engine {
 	auth := router.Group("/auth")
 		{
 			auth.POST("/sign-in", Handler.SignIn)
-			auth.POST("/sing-up", Handler.SignUp)
+			auth.POST("/sign-up", Handler.SignUp)
 		}
 
 	return router
