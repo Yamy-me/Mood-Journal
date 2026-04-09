@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 
 	"Yamy-Gin/pkg/auth"
 	"Yamy-Gin/pkg/entry"
+	"Yamy-Gin/pkg/llm"
 )
 
 type Handler struct {
@@ -59,28 +61,36 @@ func (a *Handler) SignIn(ctx *gin.Context) {
 }
 
 
-func (a *Handler) EntryCreate(ctx *gin.Context){
+func (a *Handler) EntryCreate(ctx *gin.Context) {
 	userId, ok := ctx.Get("user_id")
-	var entryData entry.Entry
-
-	if err := ctx.ShouldBindBodyWithJSON(&entryData); err != nil{
-		ctx.JSON(400, gin.H{"error": "need post with entry data"})
+	if !ok {
+		ctx.JSON(401, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	if !ok {
-		ctx.JSON(500, gin.H{"error": "Can't find user_id in json"})
+	var entryData entry.Entry
+	if err := ctx.ShouldBindBodyWithJSON(&entryData); err != nil {
+		ctx.JSON(400, gin.H{"error": "need post with entry data"})
 		return
 	}
 
 	newRepo := entry.NewRepository(a.database)
 	USERID, _ := userId.(int)
-	err := newRepo.Create(USERID, entryData.Content, entryData.MoodScore, entryData.Sentiment)
 
-	if err != nil{
+	newEntryID, err := newRepo.Create(USERID, entryData.Content, entryData.MoodScore, entryData.Sentiment)
+	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
+
+	go func(content string, entryID int64) {
+		result, err := llm.AnalyzeEntry(content)
+		if err != nil {
+			log.Printf("[ERROR] LLM analyze failed: %v", err)
+			return
+		}
+		newRepo.UpdateSentiment(entryID, result.Sentiment)
+	}(entryData.Content, newEntryID)
 
 	ctx.JSON(200, gin.H{"status": "created"})
 }

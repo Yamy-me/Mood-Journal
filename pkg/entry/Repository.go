@@ -15,13 +15,18 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{DB: db}
 }
 
-func (r *Repository) Create(UserID int, Content string, MoodScore int, Sentiment *string) error {
-	_, err := r.DB.Exec("INSERT INTO entries (user_id, content, mood_score, sentiment) VALUES (?, ?, ?, ?);", UserID, Content, MoodScore, Sentiment)
+func (r *Repository) Create(UserID int, Content string, MoodScore int, Sentiment *string) (int64, error) {
+	result, err := r.DB.Exec("INSERT INTO entries (user_id, content, mood_score, sentiment) VALUES (?, ?, ?, ?);", UserID, Content, MoodScore, Sentiment)
 	if err != nil {
-		return fmt.Errorf("[ERROR] Can't create entry: %w", err)
+		return 0, fmt.Errorf("[ERROR] Can't create entry: %w", err)
 	}
 
-	return nil
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("[ERROR] Can't get last insert id: %w", err)
+	}
+
+	return id, nil
 }
 
 func (r *Repository) GetByID(id int, userID int) (*Entry, error) {
@@ -88,4 +93,11 @@ func (r *Repository) Delete(ID int, USER_ID int) (error, int64) {
 	}
 
 	return nil, 1
+}
+func (r *Repository) UpdateSentiment(id int64, sentiment string) error {
+	_, err := r.DB.Exec("UPDATE entries SET sentiment = ? WHERE id = ?", sentiment, id)
+	if err != nil {
+		return fmt.Errorf("[ERROR] Can't update sentiment: %w", err)
+	}
+	return nil
 }
