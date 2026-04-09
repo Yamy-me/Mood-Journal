@@ -17,16 +17,16 @@ func NewSignInInput(email string, password string) *InputSignIn {
 	}
 }
 
-func (a *InputSignIn) SignIn(db *sql.DB) (string, error){
+func (a *InputSignIn) SignIn(db *sql.DB) (string, error) {
 	id, check := CheckPassword(a.Email, a.Password, db)
 
-	if !check{
+	if !check {
 		return "", fmt.Errorf("Invalid login:password")
 	}
 
 	jwtKey, err := GenerateJWTkey(a.Email, id)
 
-	if err != nil{
+	if err != nil {
 		return "", fmt.Errorf("[ERROR] Sign in jwt-Generate ERROR: %v", err)
 	}
 

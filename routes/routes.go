@@ -7,25 +7,36 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	handlers "Yamy-Gin/pkg"
+	"Yamy-Gin/pkg/middleware"
 )
 
 type Route struct{}
 
-func New() *Route{
+func New() *Route {
 	return &Route{}
-	
+
 }
 
-func (r *Route) InitRoutes() *gin.Engine {
-	db, _ := sql.Open("sqlite3", `c:\Users\Atai\Desktop\newGoLang\database.db`)
+func (r *Route) InitRoutes(db *sql.DB) *gin.Engine {
 	router := gin.New()
 	Handler := handlers.NewHandler(db)
 
 	auth := router.Group("/auth")
-		{
-			auth.POST("/sign-in", Handler.SignIn)
-			auth.POST("/sign-up", Handler.SignUp)
-		}
+	{
+		auth.POST("/sign-in", Handler.SignIn)
+		auth.POST("/sign-up", Handler.SignUp)
+	}
+	middlewareFunc := middleware.AuthMiddleware()
+	entries := router.Group("/entries")
+	entries.Use(middlewareFunc)
+	
+	{
+		
+		entries.POST("/", Handler.EntryCreate)
+		entries.GET("/", Handler.GetAllById)
+		entries.GET("/:id", Handler.GetById)
+		entries.DELETE("/:id", Handler.DeleteByID)
+	}
 
 	return router
 }

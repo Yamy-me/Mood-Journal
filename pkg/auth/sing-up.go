@@ -14,45 +14,42 @@ type InputSignUp struct {
 	Password string `json:"password" binding:"required,min=6"`
 }
 
-
-func NewInputSignUp(name string, email string, password string) *InputSignUp{
+func NewInputSignUp(name string, email string, password string) *InputSignUp {
 	return &InputSignUp{
-		Name: name,
-		Email: email,
+		Name:     name,
+		Email:    email,
 		Password: password,
 	}
 }
 
-
 func (a *InputSignUp) validate(db *sql.DB) error {
-    var exists bool
-    err := db.QueryRow("SELECT 1 FROM user WHERE email = ?", a.Email).Scan(&exists)
+	var exists bool
+	err := db.QueryRow("SELECT 1 FROM user WHERE email = ?", a.Email).Scan(&exists)
 
-    if err == nil {
-        return fmt.Errorf("user with this email already exists")
-    }
+	if err == nil {
+		return fmt.Errorf("user with this email already exists")
+	}
 
-    if err != sql.ErrNoRows {
-        return fmt.Errorf("[ERROR] DB error: %w", err)
-    }
+	if err != sql.ErrNoRows {
+		return fmt.Errorf("[ERROR] DB error: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
-
-func (a *InputSignUp) SignUp(database *sql.DB) error{
+func (a *InputSignUp) SignUp(database *sql.DB) error {
 	errValidate := a.validate(database)
 
-	if errValidate != nil{
+	if errValidate != nil {
 		return fmt.Errorf("[ERROR] SignUp VALIDATE error: %v", errValidate)
 	}
 	hashedPassword, errHash := HashingPassword(a.Password)
-	if errHash != nil{
+	if errHash != nil {
 		return fmt.Errorf("[ERROR] SignUp Hashing error: %v", errHash)
 	}
 	_, errDB := database.Exec("INSERT INTO user (name, email, password, created_at, updated_at, streak_days) VALUES (?, ?, ?, ?, ?, 0)", a.Name, a.Email, hashedPassword, time.Now(), time.Now().Format("2006-01-02 15:04:05"))
 
-	if errDB != nil{
+	if errDB != nil {
 		return fmt.Errorf("[ERROR] SignUp DATABASE error: %v", errDB)
 	}
 
