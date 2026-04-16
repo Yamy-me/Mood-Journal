@@ -30,30 +30,30 @@ func (r *Repository) Create(UserID int, Content string, MoodScore int, Sentiment
 }
 
 func (r *Repository) GetByID(id int, userID int) (*Entry, error) {
-    var entry Entry
-    
-    query := `
+	var entry Entry
+
+	query := `
         SELECT id, user_id, content, mood_score, sentiment, created_at 
         FROM entries 
         WHERE id = ? AND user_id = ?;`
 
-    err := r.DB.QueryRow(query, id, userID).Scan(
-        &entry.ID, 
-        &entry.UserID, 
-        &entry.Content, 
-        &entry.MoodScore, 
-        &entry.Sentiment, 
-        &entry.CreatedAt,
-    )
+	err := r.DB.QueryRow(query, id, userID).Scan(
+		&entry.ID,
+		&entry.UserID,
+		&entry.Content,
+		&entry.MoodScore,
+		&entry.Sentiment,
+		&entry.CreatedAt,
+	)
 
-    if err == sql.ErrNoRows {
-        return nil, fmt.Errorf("entry not found: %w", err)
-    }
-    if err != nil {
-        return nil, fmt.Errorf("database error: %w", err)
-    }
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("entry not found: %w", err)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
 
-    return &entry, nil
+	return &entry, nil
 }
 
 func (r *Repository) GetAllByUser(UserID int) ([]Entry, error) {
@@ -94,10 +94,32 @@ func (r *Repository) Delete(ID int, USER_ID int) (error, int64) {
 
 	return nil, 1
 }
+
 func (r *Repository) UpdateSentiment(id int64, sentiment string) error {
 	_, err := r.DB.Exec("UPDATE entries SET sentiment = ? WHERE id = ?", sentiment, id)
 	if err != nil {
 		return fmt.Errorf("[ERROR] Can't update sentiment: %w", err)
 	}
 	return nil
+}
+
+func (r *Repository) GetLastN(userID int, n int) ([]Entry, error) {
+	rows, err := r.DB.Query(
+		"SELECT id, user_id, content, mood_score, sentiment, created_at FROM entries WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+		userID, n,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []Entry
+	for rows.Next() {
+		var e Entry
+		if err := rows.Scan(&e.ID, &e.UserID, &e.Content, &e.MoodScore, &e.Sentiment, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		res = append(res, e)
+	}
+	return res, nil
 }

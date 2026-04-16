@@ -21,11 +21,10 @@ func New() *Route {
 func (r *Route) InitRoutes(db *sql.DB) *gin.Engine {
 	router := gin.New()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173"},
-		AllowMethods: []string{"GET", "POST", "DELETE"},
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "DELETE"},
 		AllowCredentials: true,
 	}))
-
 
 	Handler := handlers.NewHandler(db)
 
@@ -37,14 +36,19 @@ func (r *Route) InitRoutes(db *sql.DB) *gin.Engine {
 	middlewareFunc := middleware.AuthMiddleware()
 	entries := router.Group("/entries")
 	entries.Use(middlewareFunc)
-	
+
 	{
-		
+
 		entries.POST("/", Handler.EntryCreate)
 		entries.GET("/", Handler.GetAllById)
 		entries.GET("/:id", Handler.GetById)
 		entries.DELETE("/:id", Handler.DeleteByID)
+		entries.GET("/insight", Handler.GetInsight)
 	}
+	router.Static("/assets", "./frontend/dist/assets")
+	router.NoRoute(func(c *gin.Context) {
+		c.File("./frontend/dist/index.html")
+	})
 
 	return router
 }

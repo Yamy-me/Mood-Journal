@@ -11,5 +11,5 @@ type User struct {
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"-" db:"updated_at"`
 
-	StreakDays  int        `json:"streak_days" db:"streak_days"`
+	StreakDays int `json:"streak_days" db:"streak_days"`
 }

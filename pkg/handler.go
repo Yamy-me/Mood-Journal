@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
@@ -60,7 +62,6 @@ func (a *Handler) SignIn(ctx *gin.Context) {
 
 }
 
-
 func (a *Handler) EntryCreate(ctx *gin.Context) {
 	userId, ok := ctx.Get("user_id")
 	if !ok {
@@ -95,13 +96,13 @@ func (a *Handler) EntryCreate(ctx *gin.Context) {
 	ctx.JSON(200, gin.H{"status": "created"})
 }
 
-func (a *Handler) GetById(ctx *gin.Context){
+func (a *Handler) GetById(ctx *gin.Context) {
 	userid, ok := ctx.Get("user_id")
 	useridINT := userid.(int)
 
 	id := ctx.Param("id")
 	idINT, err := strconv.Atoi(id)
-	if err != nil{
+	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -112,9 +113,8 @@ func (a *Handler) GetById(ctx *gin.Context){
 	}
 	newRepo := entry.NewRepository(a.database)
 
-
 	entryGET, errEntry := newRepo.GetByID(idINT, useridINT)
-	if errEntry != nil{
+	if errEntry != nil {
 		ctx.JSON(500, gin.H{"error": errEntry.Error()})
 		return
 	}
@@ -122,13 +122,13 @@ func (a *Handler) GetById(ctx *gin.Context){
 	ctx.JSON(200, gin.H{"Entry": *entryGET})
 }
 
-func (a *Handler) DeleteByID(ctx *gin.Context){
+func (a *Handler) DeleteByID(ctx *gin.Context) {
 	userid, ok := ctx.Get("user_id")
 	useridINT := userid.(int)
 
 	id := ctx.Param("id")
 	idINT, err := strconv.Atoi(id)
-	if err != nil{
+	if err != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -140,7 +140,7 @@ func (a *Handler) DeleteByID(ctx *gin.Context){
 	newRepo := entry.NewRepository(a.database)
 
 	errDelete, _ := newRepo.Delete(idINT, useridINT)
-	if errDelete != nil{
+	if errDelete != nil {
 		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
@@ -148,7 +148,7 @@ func (a *Handler) DeleteByID(ctx *gin.Context){
 	ctx.JSON(200, gin.H{"status": "deleted"})
 }
 
-func (a *Handler) GetAllById(ctx *gin.Context){
+func (a *Handler) GetAllById(ctx *gin.Context) {
 	userid, ok := ctx.Get("user_id")
 	useridINT := userid.(int)
 	if !ok {
@@ -156,13 +156,41 @@ func (a *Handler) GetAllById(ctx *gin.Context){
 		return
 	}
 
-
 	newRepo := entry.NewRepository(a.database)
 	ListOfEntrys, err := newRepo.GetAllByUser(useridINT)
-	if err != nil{
+	if err != nil {
 		ctx.JSON(500, gin.H{"error": "Can't find user_id in json"})
 		return
 	}
 
 	ctx.JSON(200, gin.H{"ok": ListOfEntrys})
+}
+
+func (a *Handler) GetInsight(ctx *gin.Context) {
+	userid, ok := ctx.Get("user_id")
+	if !ok {
+		ctx.JSON(401, gin.H{"error": "unauthorized"})
+		return
+	}
+	useridINT, _ := userid.(int)
+
+	repo := entry.NewRepository(a.database)
+	entries, err := repo.GetLastN(useridINT, 7)
+	if err != nil || len(entries) == 0 {
+		ctx.JSON(400, gin.H{"error": "not enough entries"})
+		return
+	}
+
+	var sb strings.Builder
+	for i, e := range entries {
+		sb.WriteString(fmt.Sprintf("%d. [mood: %d] %s\n", i+1, e.MoodScore, e.Content))
+	}
+
+	insight, err := llm.GenerateInsight(sb.String())
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(200, gin.H{"insight": insight})
 }
